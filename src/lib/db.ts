@@ -15,19 +15,27 @@ export interface Multiplier {
 }
 
 /**
- * Build a libSQL client from the Cloudflare runtime env. The `/web` entrypoint
- * speaks Hrana over HTTP (fetch), so it runs inside Workers with no node deps.
+ * Build a libSQL client. The `/web` entrypoint speaks Hrana over HTTP (fetch),
+ * so it runs inside Workers with no node deps. Pass the read or write token
+ * explicitly so the privilege used at each call site is unambiguous.
  */
-export function getDb(env: Env): Client {
-  return createClient({
-    url: env.TURSO_DATABASE_URL,
-    authToken: env.TURSO_AUTH_TOKEN,
-  });
+export function getDb(url: string, authToken: string): Client {
+  return createClient({ url, authToken });
+}
+
+/** A read-only client (listing, lookups). */
+export function getReadDb(env: Env): Client {
+  return getDb(env.TURSO_DATABASE_URL, env.TURSO_READ_TOKEN);
+}
+
+/** A read-write client (future submission flow). */
+export function getWriteDb(env: Env): Client {
+  return getDb(env.TURSO_DATABASE_URL, env.TURSO_WRITE_TOKEN);
 }
 
 /** Fetch all multipliers, alphabetised by title (case-insensitive). */
 export async function listMultipliers(env: Env): Promise<Multiplier[]> {
-  const db = getDb(env);
+  const db = getReadDb(env);
   const { rows } = await db.execute(
     `SELECT id, title, description, url, more_info_url, author_github, author_email
        FROM multipliers

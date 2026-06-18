@@ -37,7 +37,7 @@ CREATE TABLE multipliers (
    ```sh
    npm install
    ```
-2. Create `.dev.vars` from the example and fill in the **read-only** Turso token:
+2. Create `.dev.vars` from the example and fill in the Turso tokens:
    ```sh
    cp .dev.vars.example .dev.vars
    # edit .dev.vars
@@ -52,17 +52,19 @@ CREATE TABLE multipliers (
 
 ## Environment variables
 
-| Name                 | Purpose                                   |
-| -------------------- | ----------------------------------------- |
-| `TURSO_DATABASE_URL` | `libsql://…turso.io` connection URL       |
-| `TURSO_AUTH_TOKEN`   | **Read-only** Turso token (listing reads) |
+| Name                 | Purpose                                          |
+| -------------------- | ------------------------------------------------ |
+| `TURSO_DATABASE_URL` | `libsql://…turso.io` connection URL              |
+| `TURSO_READ_TOKEN`   | **Read-only** Turso token (used by the listing)  |
+| `TURSO_WRITE_TOKEN`  | **Read-write** Turso token (future submit flow)  |
 
 Locally these live in `.dev.vars` (gitignored). In production set them as
 Cloudflare Pages secrets:
 
 ```sh
 npx wrangler pages secret put TURSO_DATABASE_URL --project-name mindcoding-multipliers
-npx wrangler pages secret put TURSO_AUTH_TOKEN   --project-name mindcoding-multipliers
+npx wrangler pages secret put TURSO_READ_TOKEN   --project-name mindcoding-multipliers
+npx wrangler pages secret put TURSO_WRITE_TOKEN  --project-name mindcoding-multipliers
 ```
 
 ## Deploy
