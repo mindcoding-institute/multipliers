@@ -8,6 +8,8 @@
     "build": "astro build",
     "preview": "astro build && wrangler pages dev ./dist",
     "astro": "astro",
+    "tags": "node .claude/skills/add-multiplier/scripts/check-tags.mjs",
+    "add-multiplier": "node .claude/skills/add-multiplier/scripts/add-multiplier.mjs",
     "deploy": "astro build && npx --yes wrangler pages deploy dist --project-name=mindcoding-multipliers --branch=main --commit-dirty=true"
   },
   "dependencies": {
