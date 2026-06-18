@@ -16,6 +16,13 @@ export interface Multiplier {
   tags: string | null;
 }
 
+/** A canonical tag from the `tags` lookup table. */
+export interface Tag {
+  name: string;
+  group: string | null;
+  description: string | null;
+}
+
 /** Split the comma-delimited tags column into trimmed, non-empty slugs. */
 export function parseTags(tags: string | null): string[] {
   if (!tags) return [];
@@ -54,4 +61,13 @@ export async function listMultipliers(env: Env): Promise<Multiplier[]> {
   );
   // libSQL rows are array-like row objects; cast through unknown to our shape.
   return rows as unknown as Multiplier[];
+}
+
+/** Fetch the canonical tags (name + group), grouped vocabulary for display. */
+export async function listTags(env: Env): Promise<Tag[]> {
+  const db = getReadDb(env);
+  const { rows } = await db.execute(
+    `SELECT name, "group", description FROM tags ORDER BY "group", name`
+  );
+  return rows as unknown as Tag[];
 }

@@ -232,7 +232,6 @@
   .m-tags .tag {
     font-family: var(--font-family);
     font-size: 0.75rem;
-    text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--secondary);
     background: var(--foreground1);
@@ -243,6 +242,9 @@
     content: '#';
     opacity: 0.6;
   }
+  /* Chips render their stored case verbatim — layer tags are lowercase,
+     pillar tags UPPERCASE in the DB. The .layer / .pillar classes are kept
+     for group-based colouring. */
   .m-meta {
     display: flex;
     flex-wrap: wrap;

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { listMultipliers, parseTags, type Multiplier } from '../lib/db';
+import { listMultipliers, listTags, parseTags, type Multiplier } from '../lib/db';
 
 // SSR: rendered on every request so the list reflects the DB without a redeploy.
 export const prerender = false;
@@ -8,10 +8,15 @@ export const prerender = false;
 const { env } = Astro.locals.runtime;
 
 let multipliers: Multiplier[] = [];
+let pillars = new Set<string>();
 let error: string | null = null;
 
 try {
-  multipliers = await listMultipliers(env);
+  const [mult, tags] = await Promise.all([listMultipliers(env), listTags(env)]);
+  multipliers = mult;
+  // Pillar tags (Intent/Leverage/Judgment) render UPPERCASE to set them apart
+  // from the lowercase layer tags.
+  pillars = new Set(tags.filter((t) => t.group === 'pillar').map((t) => t.name));
 } catch (e) {
   // Don't 500 the page on a DB/credentials hiccup — show a notice instead.
   error = e instanceof Error ? e.message : 'Unknown error';
@@ -59,7 +64,9 @@ function hostLabel(url: string): string {
                 parseTags(m.tags).length > 0 && (
                   <div class="m-tags">
                     {parseTags(m.tags).map((tag) => (
-                      <span class="tag">{tag}</span>
+                      <span class={`tag ${pillars.has(tag) ? 'pillar' : 'layer'}`}>
+                        {tag}
+                      </span>
                     ))}
                   </div>
                 )
