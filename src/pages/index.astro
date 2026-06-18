@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { listMultipliers, listTags, parseTags, type Multiplier } from '../lib/db';
+import { listMultipliers, listTags, parseTags, type Multiplier, type Tag } from '../lib/db';
 
 // SSR: rendered on every request so the list reflects the DB without a redeploy.
 export const prerender = false;
@@ -8,12 +8,14 @@ export const prerender = false;
 const { env } = Astro.locals.runtime;
 
 let multipliers: Multiplier[] = [];
+let allTags: Tag[] = [];
 let pillars = new Set<string>();
 let error: string | null = null;
 
 try {
   const [mult, tags] = await Promise.all([listMultipliers(env), listTags(env)]);
   multipliers = mult;
+  allTags = tags;
   // Pillar tags (Intent/Leverage/Judgment) render UPPERCASE to set them apart
   // from the lowercase layer tags.
   pillars = new Set(tags.filter((t) => t.group === 'pillar').map((t) => t.name));
@@ -21,6 +23,36 @@ try {
   // Don't 500 the page on a DB/credentials hiccup — show a notice instead.
   error = e instanceof Error ? e.message : 'Unknown error';
 }
+
+// ---- Tag filter (server-side, URL-driven) --------------------------------
+// The selector is just a list of links: each toggles its own slug in the
+// `?tags=` query param. Filtering is AND — a multiplier must carry every
+// selected tag. Canonical order (layers, then pillars) keeps the URL stable.
+const tagOrder = new Map(allTags.map((t, i) => [t.name, i]));
+const selectedSet = new Set(
+  parseTags(Astro.url.searchParams.get('tags')).filter((t) => tagOrder.has(t))
+);
+const selected = [...selectedSet].sort(
+  (a, b) => (tagOrder.get(a) ?? 0) - (tagOrder.get(b) ?? 0)
+);
+
+/** URL that toggles `tag` on/off, preserving the rest of the selection. */
+function tagHref(tag: string): string {
+  const next = new Set(selectedSet);
+  next.has(tag) ? next.delete(tag) : next.add(tag);
+  const list = [...next].sort(
+    (a, b) => (tagOrder.get(a) ?? 0) - (tagOrder.get(b) ?? 0)
+  );
+  return list.length ? `/?tags=${list.join(',')}` : '/';
+}
+
+const visible =
+  selected.length === 0
+    ? multipliers
+    : multipliers.filter((m) => {
+        const tags = parseTags(m.tags);
+        return selected.every((t) => tags.includes(t));
+      });
 
 /** Strip the scheme for a tidier visible link label. */
 function hostLabel(url: string): string {
@@ -47,11 +79,33 @@ function hostLabel(url: string): string {
       </div>
     ) : (
       <>
+        <div class="tagbar" role="group" aria-label="Filter by tag">
+          <span class="label">filter</span>
+          {allTags.map((t) => (
+            <a
+              href={tagHref(t.name)}
+              class={`tagfilter ${pillars.has(t.name) ? 'pillar' : 'layer'} ${
+                selectedSet.has(t.name) ? 'is-selected' : ''
+              }`}
+              aria-pressed={selectedSet.has(t.name)}
+              title={t.description ?? undefined}
+            >
+              {t.name}
+            </a>
+          ))}
+        </div>
         <p class="count">
-          {multipliers.length} multiplier{multipliers.length === 1 ? '' : 's'}
+          {selected.length > 0
+            ? `${visible.length} of ${multipliers.length} multipliers`
+            : `${multipliers.length} multiplier${multipliers.length === 1 ? '' : 's'}`}
         </p>
+        {visible.length === 0 ? (
+          <div class="notice">
+            <p>No multipliers match every selected tag. Remove one to widen the list.</p>
+          </div>
+        ) : (
         <ul class="mlist">
-          {multipliers.map((m) => (
+          {visible.map((m) => (
             <li class="m">
               <h2 class="m-title">
                 <a href={m.url} rel="noopener" target="_blank">
@@ -108,6 +162,7 @@ function hostLabel(url: string): string {
             </li>
           ))}
         </ul>
+        )}
       </>
     )
   }

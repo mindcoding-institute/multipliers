@@ -183,6 +183,73 @@
     font-size: 0.9rem;
   }
 
+  /* ---- Tag filter ------------------------------------------------------ */
+  /* Just a row of clickable tag links. Layer tags use the teal primary,
+     pillar tags the green accent. Unselected = outlined (border, no fill);
+     selected = filled (no border, dark text). Border stays 1px-transparent
+     when selected so toggling never shifts layout. */
+  .tagbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5ch;
+    margin: 2lh 0 0.75lh;
+  }
+  .tagbar .label {
+    color: var(--foreground2);
+    font-size: 0.85rem;
+    margin-right: 0.5ch;
+  }
+  .tagfilter {
+    font-family: var(--font-family);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+    padding: 0 0.9ch;
+    border: 1px solid transparent;
+    background: transparent;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .tagfilter::before {
+    content: '#';
+    opacity: 0.6;
+  }
+  /* Outlined (unselected) */
+  .tagfilter.layer {
+    color: var(--primary);
+    border-color: var(--primary);
+  }
+  .tagfilter.pillar {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  /* Hover previews the filled state */
+  .tagfilter:hover,
+  .tagfilter:focus-visible {
+    color: var(--background0);
+    text-decoration: none;
+  }
+  .tagfilter.layer:hover,
+  .tagfilter.layer:focus-visible {
+    background: var(--primary);
+  }
+  .tagfilter.pillar:hover,
+  .tagfilter.pillar:focus-visible {
+    background: var(--accent);
+  }
+  /* Filled (selected) */
+  .tagfilter.is-selected {
+    border-color: transparent;
+    color: var(--background0);
+  }
+  .tagfilter.layer.is-selected {
+    background: var(--primary);
+  }
+  .tagfilter.pillar.is-selected {
+    background: var(--accent);
+  }
+
   /* ---- Multiplier list ------------------------------------------------- */
   .mlist {
     list-style: none;
