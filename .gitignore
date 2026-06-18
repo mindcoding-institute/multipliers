@@ -8,6 +8,9 @@ node_modules/
 # local secrets (Turso URL + token) — never commit
 .dev.vars
 
+# scratch / local-only scripts (seed scripts, experiments)
+.tmp/
+
 # cloudflare / wrangler
 .wrangler/
 

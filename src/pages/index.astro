@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { listMultipliers, type Multiplier } from '../lib/db';
+import { listMultipliers, parseTags, type Multiplier } from '../lib/db';
 
 // SSR: rendered on every request so the list reflects the DB without a redeploy.
 export const prerender = false;
@@ -55,6 +55,15 @@ function hostLabel(url: string): string {
                 <span class="arrow">↗</span>
               </h2>
               <p class="m-desc">{m.description}</p>
+              {
+                parseTags(m.tags).length > 0 && (
+                  <div class="m-tags">
+                    {parseTags(m.tags).map((tag) => (
+                      <span class="tag">{tag}</span>
+                    ))}
+                  </div>
+                )
+              }
               <div class="m-meta">
                 <span>
                   <span class="label">link</span>

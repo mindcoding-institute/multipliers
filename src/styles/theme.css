@@ -223,6 +223,26 @@
     color: var(--foreground0);
     max-width: 80ch;
   }
+  .m-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5ch;
+    margin: 0 0 0.5lh;
+  }
+  .m-tags .tag {
+    font-family: var(--font-family);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--secondary);
+    background: var(--foreground1);
+    padding: 0 0.8ch;
+    line-height: 1.5;
+  }
+  .m-tags .tag::before {
+    content: '#';
+    opacity: 0.6;
+  }
   .m-meta {
     display: flex;
     flex-wrap: wrap;

@@ -12,6 +12,17 @@ export interface Multiplier {
   more_info_url: string | null;
   author_github: string | null;
   author_email: string | null;
+  /** Comma-delimited tag slugs, e.g. "skills,judgment". May be null/empty. */
+  tags: string | null;
+}
+
+/** Split the comma-delimited tags column into trimmed, non-empty slugs. */
+export function parseTags(tags: string | null): string[] {
+  if (!tags) return [];
+  return tags
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
 }
 
 /**
@@ -37,7 +48,7 @@ export function getWriteDb(env: Env): Client {
 export async function listMultipliers(env: Env): Promise<Multiplier[]> {
   const db = getReadDb(env);
   const { rows } = await db.execute(
-    `SELECT id, title, description, url, more_info_url, author_github, author_email
+    `SELECT id, title, description, url, more_info_url, author_github, author_email, tags
        FROM multipliers
       ORDER BY title COLLATE NOCASE`
   );
