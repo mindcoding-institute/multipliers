@@ -65,6 +65,11 @@
     min-width: 430px;
     display: flex;
     flex-direction: column;
+    /* WebTUI's base sets `word-break: break-all`, which splits words
+       mid-character on wrap. Wrap at word boundaries instead, only breaking
+       genuinely unbreakable strings (long URLs) when they'd overflow. */
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 
   ::selection {
@@ -300,18 +305,25 @@
     font-family: var(--font-family);
     font-size: 0.75rem;
     letter-spacing: 0.06em;
-    color: var(--secondary);
+    color: var(--background0);
     background: var(--foreground1);
     padding: 0 0.8ch;
     line-height: 1.5;
+    white-space: nowrap;
   }
   .m-tags .tag::before {
     content: '#';
     opacity: 0.6;
   }
   /* Chips render their stored case verbatim — layer tags are lowercase,
-     pillar tags UPPERCASE in the DB. The .layer / .pillar classes are kept
-     for group-based colouring. */
+     pillar tags UPPERCASE in the DB. Group-based colour: layer tags teal,
+     pillar tags the green accent (matching the filter bar). */
+  .m-tags .tag.layer {
+    background: var(--foreground1);
+  }
+  .m-tags .tag.pillar {
+    background: var(--accent);
+  }
   .m-meta {
     display: flex;
     flex-wrap: wrap;
