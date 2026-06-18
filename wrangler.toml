@@ -1,0 +1,12 @@
+# Cloudflare Pages — Astro SSR app (built with @astrojs/cloudflare).
+# Deploy with: npm run deploy   (astro build && wrangler pages deploy dist)
+#
+# Secrets (NOT stored here) — set in the Pages project, or for the named
+# Worker/Pages env via `wrangler pages secret put`:
+#   TURSO_DATABASE_URL   e.g. libsql://...turso.io
+#   TURSO_AUTH_TOKEN     the READ-ONLY Turso token
+# Locally these come from .dev.vars (gitignored).
+name = "mindcoding-multipliers"
+compatibility_date = "2026-06-11"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"

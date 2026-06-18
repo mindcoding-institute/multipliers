@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { listMultipliers, type Multiplier } from '../lib/db';
+
+// SSR: rendered on every request so the list reflects the DB without a redeploy.
+export const prerender = false;
+
+const { env } = Astro.locals.runtime;
+
+let multipliers: Multiplier[] = [];
+let error: string | null = null;
+
+try {
+  multipliers = await listMultipliers(env);
+} catch (e) {
+  // Don't 500 the page on a DB/credentials hiccup — show a notice instead.
+  error = e instanceof Error ? e.message : 'Unknown error';
+}
+
+/** Strip the scheme for a tidier visible link label. */
+function hostLabel(url: string): string {
+  return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+---
+
+<BaseLayout>
+  <p class="page-tag">[ Multipliers ]</p>
+  <h1>Multipliers</h1>
+  <p class="lead">
+    A living list of multipliers — the reusable artifacts, practices, and methods
+    that raise what one mind can build. Curated, and growing.
+  </p>
+
+  {
+    error ? (
+      <div class="notice error">
+        <p>Couldn't load the list right now. ({error})</p>
+      </div>
+    ) : multipliers.length === 0 ? (
+      <div class="notice">
+        <p>No multipliers yet — the list is just getting started.</p>
+      </div>
+    ) : (
+      <>
+        <p class="count">
+          {multipliers.length} multiplier{multipliers.length === 1 ? '' : 's'}
+        </p>
+        <ul class="mlist">
+          {multipliers.map((m) => (
+            <li class="m">
+              <h2 class="m-title">
+                <a href={m.url} rel="noopener" target="_blank">
+                  {m.title}
+                </a>
+                <span class="arrow">↗</span>
+              </h2>
+              <p class="m-desc">{m.description}</p>
+              <div class="m-meta">
+                <span>
+                  <span class="label">link</span>
+                  <a href={m.url} rel="noopener" target="_blank">
+                    {hostLabel(m.url)}
+                  </a>
+                </span>
+                {m.more_info_url && (
+                  <span>
+                    <span class="label">more</span>
+                    <a href={m.more_info_url} rel="noopener" target="_blank">
+                      {hostLabel(m.more_info_url)}
+                    </a>
+                  </span>
+                )}
+                {m.author_github && (
+                  <span>
+                    <span class="label">by</span>
+                    <a
+                      href={`https://github.com/${m.author_github}`}
+                      rel="noopener"
+                      target="_blank"
+                    >
+                      @{m.author_github}
+                    </a>
+                  </span>
+                )}
+                {!m.author_github && m.author_email && (
+                  <span>
+                    <span class="label">by</span>
+                    <a href={`mailto:${m.author_email}`}>{m.author_email}</a>
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+</BaseLayout>

@@ -1,0 +1,13 @@
+/* Layer order: WebTUI's three layers first, then our `site` layer last so our
+   component styling wins without !important. */
+@layer base, utils, components, site;
+
+/* WebTUI core + the components we actually use */
+@import '@webtui/css/base.css';
+@import '@webtui/css/utils/box.css';
+@import '@webtui/css/components/typography.css';
+@import '@webtui/css/components/separator.css';
+@import '@webtui/css/components/badge.css';
+
+/* Our palette, fonts and site styling */
+@import './theme.css';

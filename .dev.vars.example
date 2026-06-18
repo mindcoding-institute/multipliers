@@ -1,0 +1,6 @@
+# Copy to .dev.vars (gitignored) and fill in. Used by `astro dev` via the
+# Cloudflare platform proxy, and by `wrangler pages dev`.
+#
+# Use the READ-ONLY Turso token here — the listing only reads.
+TURSO_DATABASE_URL="libsql://mindcodinginstitutemultipliers-juliuszfedyk.aws-ap-northeast-1.turso.io"
+TURSO_AUTH_TOKEN="your-read-only-token-here"

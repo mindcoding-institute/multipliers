@@ -1,0 +1,64 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Multipliers — Mind Coding',
+  description = 'A living list of multipliers — reusable artifacts, practices, and methods that raise what one mind can build.',
+} = Astro.props;
+
+const year = 2026;
+---
+
+<!doctype html>
+<html lang="en" data-webtui-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{title}</title>
+    <!-- Umami analytics (shared with mindcoding.institute) -->
+    <script
+      is:inline
+      defer
+      src="https://analytics.venturesquad.eu/script.js"
+      data-website-id="1badc30e-b697-490b-8fc7-3bf0388d4c5f"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell">
+        <span class="logo"
+          ><span class="brk">[</span><span class="ltr">M</span><span class="brk"
+            >]</span
+          ></span
+        >
+        <a class="home" href="https://mindcoding.institute">mindcoding.institute</a>
+      </div>
+    </header>
+
+    <main class="shell">
+      <slot />
+    </main>
+
+    <footer class="site">
+      <div class="shell">
+        <span><span class="prompt">$</span> multipliers.mindcoding.institute</span>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="https://mindcoding.institute">home</a>
+          <a href="https://github.com/mindcoding-institute/multipliers" rel="noopener"
+            >github</a
+          >
+        </nav>
+        <span class="copyright"
+          >© {year}
+          <a href="https://venturesquad.eu" rel="noopener">venturesquad.eu</a></span
+        >
+      </div>
+    </footer>
+  </body>
+</html>

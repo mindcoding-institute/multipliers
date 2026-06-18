@@ -1,0 +1,16 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# local secrets (Turso URL + token) — never commit
+.dev.vars
+
+# cloudflare / wrangler
+.wrangler/
+
+# logs / os
+*.log
+.DS_Store

@@ -1,0 +1,286 @@
+/* ===========================================================================
+   Mind Coding — Multipliers app theme
+   Shares the palette, fonts and terminal aesthetic of mindcoding.institute.
+   Layers: base (WebTUI vars), site (our styling, wins over WebTUI components)
+   =========================================================================== */
+
+/* --- Fonts (vendored Nerd Fonts, mirrored from the main site) ----------- */
+@font-face {
+  font-family: 'ProFont Nerd Font Mono';
+  /* nerd-fonts ships ProFont as "ProFontIIx" (the cross-platform redraw) */
+  src: url('/fonts/ProFontIIxNerdFontMono-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'GohuFont uni14 Nerd Font Propo';
+  src: url('/fonts/GohuFontuni14NerdFontPropo-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --- Palette: map the 5-colour scheme onto WebTUI's variables ----------- */
+@layer base {
+  :root {
+    /* backgrounds, darkest -> lightest */
+    --background0: #263136; /* page */
+    --background1: #2f4348; /* raised surfaces, code */
+    --background2: #0e5172; /* nav / cards / active */
+    --background3: #1ba5b8; /* strong accent surface */
+
+    /* foregrounds, strongest -> muted */
+    --foreground0: #bee4ea; /* body text */
+    --foreground1: #1ba5b8; /* secondary / teal */
+    --foreground2: #7fa6ad; /* muted */
+
+    /* semantic palette aliases */
+    --accent: #21e482; /* green — highlights, active state, cursor */
+    --primary: #1ba5b8; /* teal — borders */
+    --secondary: #0e5172; /* deep blue — logo brackets, surfaces */
+    --light: #bee4ea; /* body text */
+    --dark: #263136; /* page background */
+
+    --font-size: 22px;
+    --line-height: 1.55;
+    --font-family: 'GohuFont uni14 Nerd Font Propo', ui-monospace, 'Cascadia Code',
+      'Courier New', monospace;
+    --heading-font-family: 'ProFont Nerd Font Mono', ui-monospace, monospace;
+
+    --box-border-color: var(--foreground1);
+    --separator-color: var(--foreground1);
+
+    /* layout */
+    --measure: 96ch;
+  }
+}
+
+/* --- Site styling ------------------------------------------------------- */
+@layer site {
+  body {
+    min-height: 100dvh;
+    /* Hard floor: never render narrower than 430px (matches the main site). */
+    min-width: 430px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--background0);
+  }
+
+  /* Headings in the chunky bitmap font */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--heading-font-family);
+    font-weight: normal;
+    line-height: 1.1;
+    color: var(--foreground0);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    color: var(--accent);
+  }
+  h2 {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    color: var(--foreground1);
+    margin-block: 1.4em 0.5em;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  a:hover,
+  a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  p,
+  li {
+    color: var(--foreground0);
+  }
+  p {
+    margin-block: 0 0.9em;
+  }
+
+  /* page shell */
+  .shell {
+    width: 100%;
+    max-width: var(--measure);
+    margin-inline: auto;
+    padding-inline: 2ch;
+  }
+  main.shell {
+    flex: 1;
+    padding-block: 2lh 3lh;
+  }
+
+  /* The <M> logo — light M between deep-blue brackets */
+  .logo {
+    font-family: var(--heading-font-family);
+    font-size: 1.8rem;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .logo .ltr {
+    color: var(--light);
+  }
+  .logo .brk {
+    color: var(--secondary);
+  }
+
+  /* ---- Top bar --------------------------------------------------------- */
+  .topbar {
+    border-bottom: 1px solid var(--foreground1);
+    background: var(--background0);
+  }
+  .topbar .shell {
+    display: flex;
+    align-items: baseline;
+    gap: 2ch;
+    padding-block: 1lh;
+    flex-wrap: wrap;
+  }
+  .topbar .logo {
+    margin-right: auto;
+  }
+  .topbar a.home {
+    color: var(--primary);
+    font-family: var(--heading-font-family);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.9rem;
+  }
+  .topbar a.home:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* ---- Page intro ------------------------------------------------------ */
+  .page-tag {
+    color: var(--accent);
+    font-family: var(--heading-font-family);
+    text-transform: uppercase;
+  }
+  .lead {
+    color: var(--foreground2);
+    max-width: 70ch;
+  }
+  .count {
+    color: var(--foreground2);
+    font-size: 0.9rem;
+  }
+
+  /* ---- Multiplier list ------------------------------------------------- */
+  .mlist {
+    list-style: none;
+    padding: 0;
+    margin: 2lh 0 0;
+    display: grid;
+    gap: 1lh;
+  }
+  .mlist li::before {
+    content: none;
+  }
+  .m {
+    border: 1px solid var(--primary);
+    padding: 0.75lh 2ch 1lh;
+  }
+  .m-title {
+    font-family: var(--heading-font-family);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: 1.3rem;
+    margin: 0 0 0.3lh;
+    line-height: 1.1;
+  }
+  .m-title a {
+    color: var(--foreground0);
+  }
+  .m-title a:hover,
+  .m-title a:focus-visible {
+    color: var(--accent);
+  }
+  .m-title .arrow {
+    color: var(--accent);
+    margin-left: 1ch;
+    font-size: 0.9rem;
+  }
+  .m-desc {
+    margin: 0 0 0.5lh;
+    color: var(--foreground0);
+    max-width: 80ch;
+  }
+  .m-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5lh 2ch;
+    font-size: 0.85rem;
+    color: var(--foreground2);
+  }
+  .m-meta a {
+    color: var(--primary);
+  }
+  .m-meta a:hover {
+    color: var(--accent);
+  }
+  .m-meta .label {
+    color: var(--foreground2);
+    margin-right: 0.5ch;
+  }
+
+  /* ---- Empty / error states ------------------------------------------- */
+  .notice {
+    border: 1px dashed var(--foreground2);
+    padding: 1lh 2ch;
+    color: var(--foreground2);
+    margin-top: 2lh;
+  }
+  .notice.error {
+    border-color: var(--accent);
+    color: var(--foreground1);
+  }
+
+  /* ---- Footer ---------------------------------------------------------- */
+  footer.site {
+    border-top: 1px solid var(--foreground1);
+    color: var(--foreground2);
+    font-size: 0.85rem;
+  }
+  footer.site .shell {
+    padding-block: 1lh;
+    display: flex;
+    justify-content: space-between;
+    gap: 1ch;
+    flex-wrap: wrap;
+  }
+  footer.site .prompt {
+    color: var(--accent);
+  }
+  footer.site .footer-links {
+    display: flex;
+    gap: 2ch;
+  }
+  footer.site .footer-links a,
+  footer.site .copyright a {
+    color: var(--primary);
+  }
+  footer.site .footer-links a:hover,
+  footer.site .footer-links a:focus-visible,
+  footer.site .copyright a:hover,
+  footer.site .copyright a:focus-visible {
+    color: var(--accent);
+  }
+}
