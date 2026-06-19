@@ -9,6 +9,23 @@ Adds a row to the `multipliers` table in Turso. The public listing
 (multipliers.mindcoding.institute) reads this table at request time, so a new
 row appears live with no redeploy.
 
+## What belongs in the directory
+
+Only **concrete, standalone artifacts** — a tool, skill, harness, platform, MCP
+connector, or self-contained prompt library you can install, run, or copy. Do
+**not** add (these go to the **articles repository** instead):
+
+- **Concepts, methodologies, or techniques** with no concrete artifact (e.g.
+  "chain-of-thought", "context engineering", "spec-driven development" as an
+  idea). Add the toolkit that implements a method (Spec Kit, BMAD), not the
+  method itself.
+- **Sub-components of something already listed** — a single Fabric pattern when
+  Fabric is the entry, one "pattern" lifted from a tool's docs.
+- **Generic vendor features** documented only in product docs (e.g. a
+  `CLAUDE.md` file) — too generic to stand alone.
+
+See the `discover-multipliers` skill for the full five-property admission test.
+
 ## Prerequisites
 
 - Run from the repo root (`multipliers/`), so `node_modules` (for
