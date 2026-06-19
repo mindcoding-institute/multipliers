@@ -24,10 +24,11 @@ try {
   error = e instanceof Error ? e.message : 'Unknown error';
 }
 
-// ---- Tag filter (server-side, URL-driven) --------------------------------
-// The selector is just a list of links: each toggles its own slug in the
-// `?tags=` query param. Filtering is AND — a multiplier must carry every
-// selected tag. Canonical order (layers, then pillars) keeps the URL stable.
+// ---- Filters (server-side, URL-driven) -----------------------------------
+// Two filters, both read from the query string so a view is shareable and
+// works without JS. `?tags=` is AND across the selected tags; `?q=` is a
+// case-insensitive substring match on title + description. A progressive
+// enhancement script (below) re-applies the search instantly as you type.
 const tagOrder = new Map(allTags.map((t, i) => [t.name, i]));
 const selectedSet = new Set(
   parseTags(Astro.url.searchParams.get('tags')).filter((t) => tagOrder.has(t))
@@ -35,24 +36,43 @@ const selectedSet = new Set(
 const selected = [...selectedSet].sort(
   (a, b) => (tagOrder.get(a) ?? 0) - (tagOrder.get(b) ?? 0)
 );
+const query = (Astro.url.searchParams.get('q') ?? '').trim();
+const queryLower = query.toLowerCase();
 
-/** URL that toggles `tag` on/off, preserving the rest of the selection. */
+/** Build a `/` URL carrying the given tag selection and search query. */
+function filterHref(tags: string[], q: string): string {
+  const params = new URLSearchParams();
+  if (tags.length) params.set('tags', tags.join(','));
+  if (q) params.set('q', q);
+  const qs = params.toString();
+  return qs ? `/?${qs}` : '/';
+}
+
+/** URL that toggles `tag` on/off, preserving the rest of the selection + query. */
 function tagHref(tag: string): string {
   const next = new Set(selectedSet);
   next.has(tag) ? next.delete(tag) : next.add(tag);
   const list = [...next].sort(
     (a, b) => (tagOrder.get(a) ?? 0) - (tagOrder.get(b) ?? 0)
   );
-  return list.length ? `/?tags=${list.join(',')}` : '/';
+  return filterHref(list, query);
 }
 
-const visible =
-  selected.length === 0
-    ? multipliers
-    : multipliers.filter((m) => {
-        const tags = parseTags(m.tags);
-        return selected.every((t) => tags.includes(t));
-      });
+/** Lowercased haystack the search matches against (and the client filters on). */
+function haystack(m: Multiplier): string {
+  return `${m.title} ${m.description ?? ''}`.toLowerCase();
+}
+
+const visible = multipliers.filter((m) => {
+  if (selected.length) {
+    const tags = parseTags(m.tags);
+    if (!selected.every((t) => tags.includes(t))) return false;
+  }
+  if (queryLower && !haystack(m).includes(queryLower)) return false;
+  return true;
+});
+
+const filtersActive = selected.length > 0 || query.length > 0;
 
 /** Strip the scheme for a tidier visible link label. */
 function hostLabel(url: string): string {
@@ -79,6 +99,21 @@ function hostLabel(url: string): string {
       </div>
     ) : (
       <>
+        <form class="search" role="search" method="get" action="/">
+          {selected.length > 0 && (
+            <input type="hidden" name="tags" value={selected.join(',')} />
+          )}
+          <span class="label">search</span>
+          <input
+            id="search"
+            type="search"
+            name="q"
+            value={query}
+            placeholder="title or description…"
+            autocomplete="off"
+            aria-label="Search multipliers by title or description"
+          />
+        </form>
         <div class="tagbar" role="group" aria-label="Filter by tag">
           <span class="label">filter</span>
           {allTags.map((t) => (
@@ -94,19 +129,17 @@ function hostLabel(url: string): string {
             </a>
           ))}
         </div>
-        <p class="count">
-          {selected.length > 0
+        <p class="count" id="count">
+          {filtersActive
             ? `${visible.length} of ${multipliers.length} multipliers`
             : `${multipliers.length} multiplier${multipliers.length === 1 ? '' : 's'}`}
         </p>
-        {visible.length === 0 ? (
-          <div class="notice">
-            <p>No multipliers match every selected tag. Remove one to widen the list.</p>
-          </div>
-        ) : (
-        <ul class="mlist">
+        <div class="notice" id="nomatch" hidden={visible.length !== 0}>
+          <p>No multipliers match your search and filters. Try removing one.</p>
+        </div>
+        <ul class="mlist" hidden={visible.length === 0}>
           {visible.map((m) => (
-            <li class="m">
+            <li class="m" data-search={haystack(m)}>
               <h2 class="m-title">
                 <a href={m.url} rel="noopener" target="_blank">
                   {m.title}
@@ -162,8 +195,57 @@ function hostLabel(url: string): string {
             </li>
           ))}
         </ul>
-        )}
       </>
     )
   }
 </BaseLayout>
+
+{/* Progressive enhancement: filter the already-rendered list instantly as you
+    type, instead of round-tripping to the server on every keystroke. The
+    server-side `?q=` filter (above) is the source of truth and the no-JS path;
+    this just makes it feel live and keeps the URL shareable via replaceState. */}
+<script define:vars={{ total: multipliers.length, selectedCount: selected.length }}>
+  const input = document.getElementById('search');
+  if (input) {
+    const list = document.querySelector('.mlist');
+    const items = list ? [...list.querySelectorAll('.m')] : [];
+    const countEl = document.getElementById('count');
+    const nomatch = document.getElementById('nomatch');
+    const form = input.form;
+
+    const syncUrl = (q) => {
+      const url = new URL(location.href);
+      q ? url.searchParams.set('q', q) : url.searchParams.delete('q');
+      history.replaceState(null, '', url);
+      // Keep tag links carrying the current query so a tag click preserves it.
+      document.querySelectorAll('.tagfilter').forEach((a) => {
+        const href = new URL(a.href, location.origin);
+        q ? href.searchParams.set('q', q) : href.searchParams.delete('q');
+        a.setAttribute('href', href.pathname + href.search);
+      });
+    };
+
+    const apply = () => {
+      const q = input.value.trim().toLowerCase();
+      let shown = 0;
+      for (const li of items) {
+        const match = !q || (li.dataset.search ?? '').includes(q);
+        li.hidden = !match;
+        if (match) shown++;
+      }
+      if (list) list.hidden = shown === 0;
+      if (nomatch) nomatch.hidden = shown !== 0;
+      if (countEl) {
+        countEl.textContent =
+          q || selectedCount > 0
+            ? `${shown} of ${total} multipliers`
+            : `${total} multiplier${total === 1 ? '' : 's'}`;
+      }
+      syncUrl(input.value.trim());
+    };
+
+    // No full-page reload on submit/Enter — the live filter already handled it.
+    if (form) form.addEventListener('submit', (e) => e.preventDefault());
+    input.addEventListener('input', apply);
+  }
+</script>

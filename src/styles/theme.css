@@ -188,6 +188,43 @@
     font-size: 0.9rem;
   }
 
+  /* ---- Search box ------------------------------------------------------ */
+  /* A bare terminal-style field: underline only, sharing the filter row's
+     muted `label`. Sits above the tag filter. */
+  .search {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5ch;
+    margin: 2lh 0 0;
+  }
+  .search .label {
+    color: var(--foreground2);
+    font-size: 0.85rem;
+  }
+  .search input {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-family);
+    font-size: 0.9rem;
+    color: var(--foreground0);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--primary);
+    padding: 0.1lh 0.5ch;
+    outline: none;
+  }
+  .search input::placeholder {
+    color: var(--foreground2);
+    opacity: 0.7;
+  }
+  .search input:focus {
+    border-bottom-color: var(--accent);
+  }
+  /* WebTUI/grid sets display on .mlist, which overrides the [hidden] default. */
+  .mlist[hidden] {
+    display: none;
+  }
+
   /* ---- Tag filter ------------------------------------------------------ */
   /* Just a row of clickable tag links. Layer tags use the teal primary,
      pillar tags the green accent. Unselected = outlined (border, no fill);
