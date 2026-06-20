@@ -1,6 +1,6 @@
 ---
 name: discover-multipliers
-description: Find, discover, search for, research, or source new mind multipliers for the Mind Coding Institute directory. Applies the five-property admission test, searches by layer, and presents candidates for approval before adding.
+description: Find, discover, search for, research, or source new mind multipliers for the Mind Coding Institute directory. Applies the five-property admission test, searches by layer, and presents vetted candidates for approval. Hands off to the add-multiplier skill for the actual insert.
 triggers:
   - find multipliers
   - discover multipliers
@@ -14,6 +14,8 @@ triggers:
 # discover-multipliers
 
 Triggers when the user asks to **find**, **discover**, **search for**, **research**, or **source** new mind multipliers for the Mind Coding Institute directory.
+
+**Scope:** this skill *discovers, vets, classifies, and lists* candidates, then presents them for approval. It does **not** write to the directory — inserting an approved candidate is the **`add-multiplier`** skill's job. Stop at the discovery report and hand off.
 
 ***
 
@@ -117,32 +119,20 @@ For each candidate ask:
 
 **Discard anything that fails the Concrete & standalone gate** (route it to the articles repo instead), or that fails two or more of the rest. Flag borderline cases.
 
-### Step 3 — Tag by layer + pillar
-Assign **one layer tag** (`prompt`, `skill`, `tool`, `harness`, `workflow`, `platform`) matching what the candidate *is*, plus **one pillar tag** (`INTENT`, `LEVERAGE`, `JUDGMENT`) for what it primarily moves — the directory convention is one of each.
+### Step 3 — Classify by layer + pillar
+For the report, assign each candidate **one layer tag** (`prompt`, `skill`, `tool`, `harness`, `workflow`, `platform`) matching what it *is*, plus **one pillar tag** (`INTENT`, `LEVERAGE`, `JUDGMENT`) for what it primarily moves — the directory convention is one of each. This is a *proposed* classification for the user to review; the `add-multiplier` skill validates it against the live `tags` table at insert time.
 
-Check available tags first:
-```bash
-npm run tags
-```
+### Step 4 — Screen out obvious duplicates
+Drop candidates already in the directory so the report isn't noisy — eyeball the live listing, or a filtered view such as `https://multipliers.mindcoding.institute/?tags=LEVERAGE`. This is only a courtesy screen; the authoritative duplicate guard (UNIQUE `title`/`url`) lives in the `add-multiplier` skill, so a borderline near-dup can still be surfaced for the user to judge.
 
-### Step 4 — Check for duplicates
-Compare candidate titles against the live directory:
-```bash
-npm run add-multiplier -- --title "Candidate Title" --dry-run
-```
-Or eyeball `https://multipliers.mindcoding.institute`.
+### Step 5 — Present the report and hand off
+Show the full discovery report (table below) and let the user prune. **Stop here.** This skill does not write to the directory. For each candidate the user approves, invoke the **`add-multiplier`** skill, which owns tag validation, the duplicate guard, the write token, and the actual insert.
 
-### Step 5 — Add via skill
-For each approved candidate:
-```bash
-npm run add-multiplier --   --title "Title"   --description "One or two sentences. What it does and why it's a multiplier."   --link "https://primary-url"   --more "https://secondary-url"   --by "@github-handle"   --tags "LAYER,PILLAR"
-```
-
-### Step 6 — Log the session
-After bulk additions, log a WorkJournal entry in the `mindcoding` journal:
+### Step 6 — Log the discovery session
+After a session, log a WorkJournal entry in the `mindcoding` journal:
 - What sources were searched
 - How many candidates found vs admitted
-- Any new tags needed (flag for `add-tag` follow-up)
+- Any new tags the admitted set would need (flag for `add-tag` follow-up)
 - Patterns noticed (e.g. a whole new sub-layer emerging)
 
 ***
@@ -157,7 +147,7 @@ When presenting discovered candidates to the user before adding, use this table 
 | 2 | Context Engineering | Workflows | @author | INTENT | ❌ concept → articles repo |
 | 3 | Fabric — Summarize Pattern | Prompts | @author | LEVERAGE | ❌ sub-piece of Fabric |
 
-Always show the full table before running `add-multiplier` so the user can prune.
+Always show the full table and let the user prune **before** handing any candidate to the `add-multiplier` skill.
 
 ***
 
