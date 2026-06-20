@@ -400,22 +400,25 @@
   footer.site .shell {
     padding-block: 1lh;
     display: flex;
-    justify-content: space-between;
-    gap: 1lh 4ch;
     flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    /* row-gap stacks the sections on mobile; column-gap is the desktop
+       middle gap that keeps the two sections from blending. */
+    gap: 0.6lh 5ch;
   }
-  footer.site .footer-links {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4lh;
-  }
+  footer.site .footer-links,
   footer.site .footer-right {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    text-align: right;
-    gap: 0.4lh;
+    flex-wrap: wrap;
+    align-items: baseline;
+  }
+  /* Inline " | " separators between links (and before the copyright). */
+  footer.site .footer-links a:not(:last-child)::after,
+  footer.site .footer-right .copyright::before {
+    content: "|";
+    margin-inline: 0.75ch;
+    color: var(--foreground2);
   }
   footer.site a {
     color: var(--primary);
@@ -424,13 +427,14 @@
   footer.site a:focus-visible {
     color: var(--accent);
   }
+  /* Keep the separator muted even though it lives inside the link box. */
+  footer.site .footer-links a:hover::after,
+  footer.site .footer-links a:focus-visible::after {
+    color: var(--foreground2);
+  }
   @media (max-width: 48rem) {
     footer.site .shell {
       flex-direction: column;
-    }
-    footer.site .footer-right {
-      align-items: flex-start;
-      text-align: left;
     }
   }
 }
