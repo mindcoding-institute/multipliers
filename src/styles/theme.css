@@ -401,24 +401,36 @@
     padding-block: 1lh;
     display: flex;
     justify-content: space-between;
-    gap: 1ch;
+    gap: 1lh 4ch;
     flex-wrap: wrap;
-  }
-  footer.site .prompt {
-    color: var(--accent);
   }
   footer.site .footer-links {
     display: flex;
-    gap: 2ch;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4lh;
   }
-  footer.site .footer-links a,
-  footer.site .copyright a {
+  footer.site .footer-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    gap: 0.4lh;
+  }
+  footer.site a {
     color: var(--primary);
   }
-  footer.site .footer-links a:hover,
-  footer.site .footer-links a:focus-visible,
-  footer.site .copyright a:hover,
-  footer.site .copyright a:focus-visible {
+  footer.site a:hover,
+  footer.site a:focus-visible {
     color: var(--accent);
+  }
+  @media (max-width: 48rem) {
+    footer.site .shell {
+      flex-direction: column;
+    }
+    footer.site .footer-right {
+      align-items: flex-start;
+      text-align: left;
+    }
   }
 }
