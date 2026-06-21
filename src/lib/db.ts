@@ -14,6 +14,8 @@ export interface Multiplier {
   author_email: string | null;
   /** Comma-delimited tag slugs, e.g. "skills,judgment". May be null/empty. */
   tags: string | null;
+  /** 1 once a maintainer has approved the row; pending submissions are 0. */
+  approved: number;
 }
 
 /** A canonical tag from the `tags` lookup table. */
@@ -51,12 +53,21 @@ export function getWriteDb(env: Env): Client {
   return getDb(env.TURSO_DATABASE_URL, env.TURSO_WRITE_TOKEN);
 }
 
-/** Fetch all multipliers, alphabetised by title (case-insensitive). */
-export async function listMultipliers(env: Env): Promise<Multiplier[]> {
+/**
+ * Fetch multipliers, alphabetised by title (case-insensitive). Only approved
+ * rows are returned by default — pending submissions (approved=0) stay hidden
+ * from the public listing until a maintainer approves them. Pass
+ * `{ includePending: true }` for maintainer/admin views.
+ */
+export async function listMultipliers(
+  env: Env,
+  { includePending = false }: { includePending?: boolean } = {}
+): Promise<Multiplier[]> {
   const db = getReadDb(env);
   const { rows } = await db.execute(
-    `SELECT id, title, description, url, more_info_url, author_github, author_email, tags
+    `SELECT id, title, description, url, more_info_url, author_github, author_email, tags, approved
        FROM multipliers
+      ${includePending ? '' : 'WHERE approved = 1'}
       ORDER BY title COLLATE NOCASE`
   );
   // libSQL rows are array-like row objects; cast through unknown to our shape.

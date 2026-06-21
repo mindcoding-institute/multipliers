@@ -2,7 +2,21 @@
 # Cloudflare platform proxy, and by `wrangler pages dev`.
 #
 # The listing only reads, so TURSO_READ_TOKEN is all it needs.
-# TURSO_WRITE_TOKEN is here for the future submission flow.
+# TURSO_WRITE_TOKEN is used by the submission API + OAuth flow.
 TURSO_DATABASE_URL="libsql://mindcodinginstitutemultipliers-juliuszfedyk.aws-ap-northeast-1.turso.io"
 TURSO_READ_TOKEN="your-read-only-token-here"
 TURSO_WRITE_TOKEN="your-read-write-token-here"
+
+# GitHub OAuth App (contributor sign-in → mints a personal API token).
+# Register an app with callback:
+#   https://multipliers.mindcoding.institute/api/auth/github/callback
+# (add http://localhost:4321/api/auth/github/callback for local dev).
+GITHUB_CLIENT_ID="your-github-oauth-client-id"
+GITHUB_CLIENT_SECRET="your-github-oauth-client-secret"
+
+# Random secret (e.g. `openssl rand -base64 48`) signing the OAuth state +
+# session cookies. Keep it stable — rotating it invalidates live sessions.
+TOKEN_SIGNING_SECRET="your-long-random-signing-secret"
+
+# Used by the submit-multiplier contributor skill (a token you minted at /account).
+MCP_API_TOKEN="mcp_your-personal-api-token"

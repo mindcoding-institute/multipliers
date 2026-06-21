@@ -15,6 +15,11 @@
 //   --env-file <path>     env file holding TURSO_DATABASE_URL + TURSO_WRITE_TOKEN
 //   --help                show usage
 //
+// Review the contributor submission queue (rows with approved=0):
+//   --list-pending        list submissions awaiting review
+//   --approve <id>        approve a pending submission (sets approved=1 → live)
+//   --reject <id>         delete a pending submission
+//
 // Convention each row follows: exactly one layer tag (lowercase: prompt, skill,
 // tool, harness, workflow, platform) + one pillar tag (UPPERCASE: INTENT,
 // LEVERAGE, JUDGMENT). Run check-tags.mjs first to see the vocabulary.
@@ -36,7 +41,8 @@ const USAGE = `Add a multiplier.
 
 Required:  --title  --description  --url
 Optional:  --more-info-url  --author-github  --author-email  --tags
-Flags:     --update  --allow-unknown-tags  --env-file <path>  --help`;
+Flags:     --update  --allow-unknown-tags  --env-file <path>  --help
+Review:    --list-pending  --approve <id>  --reject <id>`;
 
 function parseArgs(argv) {
   const out = { row: {}, update: false, allowUnknownTags: false };
@@ -54,6 +60,9 @@ function parseArgs(argv) {
     else if (flag === '--update') out.update = true;
     else if (flag === '--allow-unknown-tags') out.allowUnknownTags = true;
     else if (flag === '--env-file') out.envFile = take();
+    else if (flag === '--list-pending') out.listPending = true;
+    else if (flag === '--approve') out.approve = take();
+    else if (flag === '--reject') out.reject = take();
     else if (FIELD_FLAGS[flag]) out.row[FIELD_FLAGS[flag]] = take();
     else throw new Error(`Unknown argument: ${flag}`);
   }
@@ -71,6 +80,54 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
     console.log(USAGE);
+    return;
+  }
+
+  // ---- Review modes for the contributor submission queue -----------------
+  if (args.listPending || args.approve || args.reject) {
+    const env = loadWriteEnv({ envFile: args.envFile });
+    const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_WRITE_TOKEN });
+
+    if (args.listPending) {
+      const { rows } = await db.execute(
+        `SELECT id, title, url, author_github, tags
+           FROM multipliers WHERE approved = 0 ORDER BY id`
+      );
+      if (!rows.length) {
+        console.log('No pending submissions.');
+        return;
+      }
+      console.log(`${rows.length} pending submission(s):`);
+      for (const r of rows) {
+        console.log(
+          `  #${r.id}  ${r.title}  [${r.tags ?? ''}]` +
+            `${r.author_github ? '  by @' + r.author_github : ''}\n        ${r.url}`
+        );
+      }
+      console.log('\nApprove with --approve <id>, reject with --reject <id>.');
+      return;
+    }
+
+    const id = Number(args.approve ?? args.reject);
+    if (!Number.isInteger(id)) throw new Error('--approve/--reject need a numeric submission id');
+
+    if (args.approve) {
+      const res = await db.execute({
+        sql: 'UPDATE multipliers SET approved = 1 WHERE id = ? AND approved = 0',
+        args: [id],
+      });
+      if (!res.rowsAffected) throw new Error(`No pending submission #${id} (already approved or missing).`);
+      const { rows } = await db.execute({ sql: 'SELECT title FROM multipliers WHERE id = ?', args: [id] });
+      console.log(`✓ approved #${id}  ${rows[0]?.title ?? ''} — now live`);
+    } else {
+      const { rows } = await db.execute({
+        sql: 'SELECT title FROM multipliers WHERE id = ? AND approved = 0',
+        args: [id],
+      });
+      if (!rows.length) throw new Error(`No pending submission #${id} (already approved or missing).`);
+      await db.execute({ sql: 'DELETE FROM multipliers WHERE id = ? AND approved = 0', args: [id] });
+      console.log(`✓ rejected #${id}  ${rows[0].title} — removed`);
+    }
     return;
   }
 
@@ -131,20 +188,23 @@ async function main() {
     tags.length ? tags.join(',') : null,
   ];
 
+  // Maintainer-added rows go live immediately (approved=1); the contributor API
+  // is the only path that inserts approved=0.
   const sql = args.update
     ? `INSERT INTO multipliers
-         (title, description, url, more_info_url, author_github, author_email, tags)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+         (title, description, url, more_info_url, author_github, author_email, tags, approved)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1)
        ON CONFLICT(title) DO UPDATE SET
          description   = excluded.description,
          url           = excluded.url,
          more_info_url = excluded.more_info_url,
          author_github = excluded.author_github,
          author_email  = excluded.author_email,
-         tags          = excluded.tags`
+         tags          = excluded.tags,
+         approved      = 1`
     : `INSERT INTO multipliers
-         (title, description, url, more_info_url, author_github, author_email, tags)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`;
+         (title, description, url, more_info_url, author_github, author_email, tags, approved)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1)`;
 
   await db.execute({ sql, args: values });
 

@@ -1,0 +1,113 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SESSION_COOKIE, TOKEN_FLASH_COOKIE, verifySession } from '../lib/auth';
+import { getReadDb } from '../lib/db';
+
+export const prerender = false;
+
+const { env } = Astro.locals.runtime;
+const SITE = 'https://multipliers.mindcoding.institute';
+
+const session = await verifySession(env.TOKEN_SIGNING_SECRET, Astro.cookies.get(SESSION_COOKIE)?.value);
+
+// A freshly minted token is revealed once, then the flash cookie is cleared.
+const freshToken = Astro.cookies.get(TOKEN_FLASH_COOKIE)?.value ?? null;
+if (freshToken) Astro.cookies.delete(TOKEN_FLASH_COOKIE, { path: '/' });
+
+interface TokenRow {
+  id: number;
+  token_prefix: string;
+  label: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+
+let tokens: TokenRow[] = [];
+if (session) {
+  try {
+    const { rows } = await getReadDb(env).execute({
+      sql: `SELECT id, token_prefix, label, created_at, last_used_at, revoked_at
+              FROM api_tokens WHERE contributor_id = ? ORDER BY created_at DESC`,
+      args: [session.contributorId],
+    });
+    tokens = rows as unknown as TokenRow[];
+  } catch {
+    tokens = [];
+  }
+}
+
+const curlExample = `curl -X POST ${SITE}/api/submit \\
+  -H "Authorization: Bearer $MCP_API_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"title":"My Tool","description":"What it does and why.","url":"https://example.com","tags":"tool,LEVERAGE"}'`;
+---
+
+<BaseLayout title="Account — Multipliers">
+  <p class="page-tag">[ Account ]</p>
+  <h1>Account</h1>
+
+  {
+    !session ? (
+      <>
+        <p class="lead">
+          Sign in with GitHub to get a personal API token. That token lets you submit
+          multipliers from the API, a skill, or the form — submissions are reviewed before
+          they go live.
+        </p>
+        <p>
+          <a class="btn" href="/api/auth/github">Sign in with GitHub</a>
+        </p>
+      </>
+    ) : (
+      <>
+        <p class="lead">
+          Signed in as <a href={`https://github.com/${session.githubLogin}`} rel="noopener" target="_blank">@{session.githubLogin}</a>.
+        </p>
+
+        {freshToken && (
+          <div class="notice token-reveal">
+            <p><strong>Your new API token — copy it now.</strong> For your security it
+            will not be shown again.</p>
+            <pre class="codeblock"><code>{freshToken}</code></pre>
+            <p>Add it to your <code>.dev.vars</code> as <code>MCP_API_TOKEN</code>, or pass it
+            as a <code>Bearer</code> token.</p>
+          </div>
+        )}
+
+        <h2>Your tokens</h2>
+        {tokens.length === 0 ? (
+          <p>No tokens yet.</p>
+        ) : (
+          <ul class="token-list">
+            {tokens.map((t) => (
+              <li class="token-row">
+                <code>{t.token_prefix}…</code>
+                <span class="token-meta">
+                  created {t.created_at}
+                  {t.last_used_at && <> · last used {t.last_used_at}</>}
+                  {t.revoked_at && <> · <span class="revoked">revoked</span></>}
+                </span>
+                {!t.revoked_at && (
+                  <form method="POST" action="/api/auth/revoke" class="token-revoke">
+                    <input type="hidden" name="token_id" value={t.id} />
+                    <button type="submit" class="btn btn-quiet">revoke</button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p class="count">
+          Need a fresh token? <a href="/api/auth/github">Sign in again</a> to mint one.
+        </p>
+
+        <h2>Using your token</h2>
+        <p>Submit from the command line:</p>
+        <pre class="codeblock"><code>{curlExample}</code></pre>
+        <p>Or use the <code>submit-multiplier</code> skill, or just the
+        <a href="/submit">web form</a>.</p>
+      </>
+    )
+  }
+</BaseLayout>

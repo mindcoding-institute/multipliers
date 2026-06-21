@@ -17,3 +17,9 @@ node_modules/
 # logs / os
 *.log
 .DS_Store
+
+# packaged skill bundles (regenerated from the skill source dirs)
+*.zip
+
+# local workjournal selection (per-machine)
+.workjournal

@@ -1,0 +1,218 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SESSION_COOKIE, verifySession } from '../lib/auth';
+import { listTags, type Tag } from '../lib/db';
+
+export const prerender = false;
+
+const { env } = Astro.locals.runtime;
+const session = await verifySession(env.TOKEN_SIGNING_SECRET, Astro.cookies.get(SESSION_COOKIE)?.value);
+
+let allTags: Tag[] = [];
+let pillars = new Set<string>();
+if (session) {
+  try {
+    allTags = await listTags(env);
+    pillars = new Set(allTags.filter((t) => t.group === 'pillar').map((t) => t.name));
+  } catch {
+    allTags = [];
+  }
+}
+
+// Outcome banner from the no-JS POST round-trip (/api/submit-form redirects here).
+const status = Astro.url.searchParams.get('status');
+const okId = Astro.url.searchParams.get('id');
+const errMsg = Astro.url.searchParams.get('msg');
+---
+
+<BaseLayout title="Submit a multiplier — Multipliers">
+  <p class="page-tag">[ Submit ]</p>
+  <h1>Submit a multiplier</h1>
+  <p class="lead">
+    Three ways to propose an entry — pick whichever fits. All of them queue the
+    submission for review; a maintainer approves it before it goes live.
+  </p>
+
+  {/* Radio-driven, no-JS tabs: the checked radio drives which pane shows via
+      `.submit:has(#m-…:checked)` in the stylesheet. Form is the default. */}
+  <div class="submit">
+    <input class="vh" type="radio" name="method" id="m-form" checked />
+    <input class="vh" type="radio" name="method" id="m-cli" />
+    <input class="vh" type="radio" name="method" id="m-skill" />
+
+    <aside class="submit-nav" aria-label="Submission method">
+      <span class="field-label">submit via</span>
+      <label class="snav" for="m-form">form</label>
+      <label class="snav" for="m-cli">cli</label>
+      <label class="snav" for="m-skill">skill</label>
+    </aside>
+
+    <div class="submit-panes">
+      {/* ---- Form pane (browser, GitHub session) ------------------------- */}
+      <section class="pane pane-form" aria-label="Submit via the web form">
+        {status === 'ok' && (
+          <div class="notice token-reveal">
+            <p><strong>Thanks — submission #{okId} received.</strong> It’s queued for review
+            and will appear once a maintainer approves it.</p>
+          </div>
+        )}
+        {status === 'err' && (
+          <div class="notice error"><p>{errMsg ?? 'Submission failed.'}</p></div>
+        )}
+
+        {
+          !session ? (
+            <>
+              <p>
+                Sign in with GitHub before submitting — it gates spam and credits you
+                as the submitter.
+              </p>
+              <p><a class="btn" href="/api/auth/github">Sign in with GitHub</a></p>
+            </>
+          ) : (
+            <>
+              <p>
+                Submitting as <a href={`https://github.com/${session.githubLogin}`} rel="noopener" target="_blank">@{session.githubLogin}</a>.
+                Pick one layer tag and one pillar tag where you can.
+              </p>
+
+              <form id="submit-form" class="mform" method="POST" action="/api/submit-form">
+                <div class="field">
+                  <label for="f-title">title <span class="req">*</span></label>
+                  <input id="f-title" name="title" type="text" required maxlength="120" autocomplete="off" />
+                </div>
+                <div class="field">
+                  <label for="f-url">url <span class="req">*</span></label>
+                  <input id="f-url" name="url" type="url" required placeholder="https://…" />
+                </div>
+                <div class="field">
+                  <label for="f-desc">description <span class="req">*</span></label>
+                  <textarea id="f-desc" name="description" rows="4" required maxlength="2000"></textarea>
+                </div>
+                <div class="field">
+                  <label for="f-more">more info url</label>
+                  <input id="f-more" name="more_info_url" type="url" placeholder="https://… (optional)" />
+                </div>
+                <div class="field">
+                  <label for="f-email">contact email</label>
+                  <input id="f-email" name="author_email" type="email" placeholder="optional" />
+                </div>
+                <div class="field">
+                  <span class="field-label">tags</span>
+                  <div class="chipset">
+                    {allTags.map((t) => (
+                      <label class={`chip ${pillars.has(t.name) ? 'pillar' : 'layer'}`} title={t.description ?? undefined}>
+                        <input type="checkbox" name="tags" value={t.name} />
+                        {t.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div class="field">
+                  <button type="submit" class="btn">submit for review</button>
+                </div>
+              </form>
+              <div class="notice" id="form-result" hidden></div>
+            </>
+          )
+        }
+      </section>
+
+      {/* ---- CLI pane (curl / terminal, personal token) ------------------ */}
+      <section class="pane pane-cli" aria-label="Submit from the command line">
+        <p>
+          POST to the public API with a personal token. Get your
+          <code>mcp_…</code> token by signing in at
+          <a href="/account">/account</a> (it’s shown once).
+        </p>
+        <div class="codeblock"><code>{`curl -X POST https://multipliers.mindcoding.institute/api/submit \\
+  -H "Authorization: Bearer $MCP_API_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "title": "Spec Kit",
+    "url": "https://github.com/github/spec-kit",
+    "description": "A toolkit for spec-driven development.",
+    "more_info_url": "https://github.blog/…",
+    "tags": "workflow,INTENT"
+  }'`}</code></div>
+        <p class="pane-note">
+          <strong>Required:</strong> <code>title</code>, <code>url</code>,
+          <code>description</code>. <strong>Optional:</strong>
+          <code>more_info_url</code>, <code>author_email</code>, <code>tags</code>
+          (one layer + one pillar). Your GitHub handle is attached automatically.
+          On success you get <code>201</code> with the new submission id; it lands
+          in the review queue.
+        </p>
+      </section>
+
+      {/* ---- Skill pane (Claude Code skill) ------------------------------ */}
+      <section class="pane pane-skill" aria-label="Submit with the Claude Code skill">
+        <p>
+          Use the <code>submit-multiplier</code> skill from Claude Code. One-time
+          setup: sign in at <a href="/account">/account</a>, then put the token in
+          <code>.dev.vars</code> (or export it):
+        </p>
+        <div class="codeblock"><code>{`MCP_API_TOKEN="mcp_…"`}</code></div>
+        <p>Then just ask, in natural language:</p>
+        <div class="codeblock"><code>{`/submit-multiplier
+
+  Submit Spec Kit — https://github.com/github/spec-kit —
+  a toolkit for spec-driven development. Tags: workflow, INTENT`}</code></div>
+        <p class="pane-note">
+          The skill validates fields, checks the tag vocabulary, and rejects
+          duplicates before queueing the submission for review. Under the hood it
+          calls the same <code>/api/submit</code> endpoint as the CLI tab.
+        </p>
+      </section>
+    </div>
+  </div>
+</BaseLayout>
+
+{/* Progressive enhancement: POST as JSON to /api/submit (cookie-authed, with a
+    custom header so cross-site forms can't drive it) and show the result inline,
+    instead of the full-page redirect of the no-JS /api/submit-form path. */}
+<script>
+  const form = document.getElementById('submit-form') as HTMLFormElement | null;
+  const result = document.getElementById('form-result');
+  if (form && result) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const payload = {
+        title: String(fd.get('title') ?? ''),
+        url: String(fd.get('url') ?? ''),
+        description: String(fd.get('description') ?? ''),
+        more_info_url: String(fd.get('more_info_url') ?? ''),
+        author_email: String(fd.get('author_email') ?? ''),
+        tags: fd.getAll('tags').map(String).join(','),
+      };
+      const btn = form.querySelector('button[type=submit]') as HTMLButtonElement | null;
+      if (btn) btn.disabled = true;
+      result.hidden = true;
+      result.classList.remove('error', 'token-reveal');
+      try {
+        const res = await fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
+          body: JSON.stringify(payload),
+        });
+        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        if (res.status === 201) {
+          result.classList.add('token-reveal');
+          result.innerHTML = `<p><strong>Thanks — submission #${data.id} received.</strong> It’s queued for review.</p>`;
+          form.reset();
+        } else {
+          const detail = Array.isArray(data.details) ? (data.details as string[]).join('; ') : '';
+          result.classList.add('error');
+          result.innerHTML = `<p>${String(data.error ?? 'Submission failed')}${detail ? ': ' + detail : ''}.</p>`;
+        }
+      } catch {
+        result.classList.add('error');
+        result.innerHTML = '<p>Network error. Please try again.</p>';
+      } finally {
+        if (btn) btn.disabled = false;
+        result.hidden = false;
+      }
+    });
+  }
+</script>
