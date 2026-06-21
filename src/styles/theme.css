@@ -161,6 +161,10 @@
     color: var(--light);
     margin-right: auto;
   }
+  .topbar .wordmark:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
   .topbar a.home {
     color: var(--primary);
     font-family: var(--heading-font-family);
